@@ -48,9 +48,9 @@ function App() {
         const data ={
           'online_order': 0,
           'book_table': 1,
-          'location': 0,
-          'rest_type': 4,
-          'cuisines': 9,
+          'location': location,
+          'rest_type': rest_type,
+          'cus_type': cusine,
           'cost': 550,
         }
         console.log('data',data)
@@ -103,7 +103,7 @@ function App() {
             <br />
             <label style={{width: 1400}}>
               Restaurant Type:{' '}
-              <select onChange={(e) => {setRest_type(e.target.value)}} name="rest_type">
+              <select onChange={(e) => {console.log('rest_type',e.target.value);setRest_type(e.target.value)}} name="rest_type">
               {
                   rest_types.map((rest_type) => {
                     // console.log('rest_type',rest_type)

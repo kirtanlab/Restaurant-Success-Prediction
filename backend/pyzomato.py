@@ -14,7 +14,7 @@ from sklearn.metrics import r2_score
 import json
 from pandas import json_normalize
 from sklearn.preprocessing import StandardScaler
-# from flask import Flask, jsonify, request,current_app,make_response
+from flask import Flask, jsonify, request,current_app,make_response
 # %%
 zomato=pd.read_csv("./zomato.csv")
 
@@ -37,7 +37,7 @@ zomato.dropna(how='any',inplace=True)
 zomato.info()
 # print(list(zomato['location'].unique()))
 # print(list(zomato['rest_type'].unique()))
-print(list(zomato['cuisines'].unique()))
+# print(list(zomato['cuisines'].unique()))
 
 
 # %%
@@ -59,7 +59,7 @@ zomato.info()
 zomato['rate'].unique()
 zomato = zomato.loc[zomato.rate !='NEW']
 zomato = zomato.loc[zomato.rate !='-'].reset_index(drop=True)
-remove_slash = lambda x: x.replace('/5', '') if type(x) == np.str else x
+remove_slash = lambda x: x.replace('/5', '') if type(x) == str else x
 zomato.rate = zomato.rate.apply(remove_slash).str.strip().astype('float')
 zomato['rate'].head()
 
@@ -69,7 +69,10 @@ zomato.name = zomato.name.apply(lambda x:x.title())
 zomato.online_order.replace(('Yes','No'),(True, False),inplace=True)
 zomato.book_table.replace(('Yes','No'),(True, False),inplace=True)
 zomato.cost.unique()
-print(zomato)
+org_rest_type = zomato['rest_type']
+org_location_type = zomato['location']
+org_cus_type = zomato['cuisines']
+# print(zomato)
 
 # %%
 #Encode the input Variables
@@ -80,7 +83,19 @@ def Encode(zomato):
         zomato[column],my_dict[var_name] = pd.factorize(zomato[column])
     return zomato
 zomato_en = Encode(zomato.copy())
-# print(my_dict)
+value_rest_type = zomato_en['rest_type']
+value_location_type = zomato_en['location']
+value_cus_type = zomato_en['cuisines']
+
+Rest_Type_Data = pd.concat([org_rest_type,value_rest_type], axis=1)
+Rest_Type_Data.columns.values[1] = 'rest_type_Value'
+
+Location_Data = pd.concat([org_location_type,value_location_type], axis=1)
+Location_Data.columns.values[1] = 'location_Value'
+
+Cus_Type_Data = pd.concat([org_cus_type,value_cus_type], axis=1)
+Cus_Type_Data.columns.values[1] = 'cus_Type_Data_Value'
+
 value_to_factorize = 'North Indian, Mughlai, Chinese'
 idx = my_dict["encoded_cuisines"]
 zomato_en_en = pd.concat([zomato, zomato_en], axis=1)
@@ -121,7 +136,7 @@ total_weight = weight_for_votes + weight_for_rating
 success_metric = (weighted_votes + weighted_rating) / total_weight
 zomato_en['success_metric'] = success_metric
 # %%
-print(zomato_en['success_metric'])
+# print(zomato_en['success_metric'])
 
 # %%
 # print(zomato_en.head(10))
@@ -144,7 +159,7 @@ y_train.head()
 # print("y_train",x_test.head())
 
 # %%
-print(x_train.head(),y_train.head())
+# print(x_train.head(),y_train.head())
 
 # %%
 #Prepare a Linear REgression Model
@@ -216,7 +231,22 @@ def General(x_test):
     # print(zomato_en.loc[row_num,'rest_type'])
 
     print("x_test",x_test)
+    rest_type_string = x_test['rest_type']
+    rest_type_factor = Rest_Type_Data.loc[Rest_Type_Data['rest_type'] == rest_type_string, 'rest_type_Value'].iloc[0]
+
+    cus_type_string = x_test['cus_type']
+    cus_type_factor = Cus_Type_Data.loc[Cus_Type_Data['cuisines'] == cus_type_string, 'cus_Type_Data_Value'].iloc[0]
+
+    location_string = x_test['location']
+    location_factor = Location_Data.loc[Location_Data['location'] == location_string, 'location_Value'].iloc[0]
+    print("\nrest_type_factor",rest_type_factor,"\n","cus_type_factor",cus_type_factor,"\n","location_factor",location_factor,"\n")
+
+    x_test['rest_type'] = rest_type_factor
+    x_test['cus_type'] = cus_type_factor
+    x_test['location'] = location_factor
+    
     x_test =pd.DataFrame(x_test,index=[0])
+    x_test = x_test.rename(columns={'cus_type':'cuisines'})
     print("x_df",x_test)
     lin_y = lin_reg.predict(x_test)
     DTree_y = DTree.predict(x_test)
